@@ -14,7 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      tasks: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          id: string
+          questions: Json
+          task_type: Database["public"]["Enums"]["task_type"]
+          title: string
+          transcript: string
+          updated_at: string
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          id?: string
+          questions: Json
+          task_type: Database["public"]["Enums"]["task_type"]
+          title: string
+          transcript: string
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          id?: string
+          questions?: Json
+          task_type?: Database["public"]["Enums"]["task_type"]
+          title?: string
+          transcript?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_results: {
+        Row: {
+          created_at: string
+          id: string
+          score: number
+          task_id: string
+          total_questions: number
+          user_answers: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          score: number
+          task_id: string
+          total_questions: number
+          user_answers: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          score?: number
+          task_id?: string
+          total_questions?: number
+          user_answers?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_results_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +90,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      task_type: "lecture" | "conversation"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +217,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      task_type: ["lecture", "conversation"],
+    },
   },
 } as const
