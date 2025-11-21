@@ -16,9 +16,10 @@ interface Question {
 interface QuizProps {
   questions: Question[];
   onComplete: (answers: number[], score: number) => void;
+  onBack?: () => void;
 }
 
-export const Quiz = ({ questions, onComplete }: QuizProps) => {
+export const Quiz = ({ questions, onComplete, onBack }: QuizProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<number[]>(new Array(questions.length).fill(-1));
   const [selectedAnswer, setSelectedAnswer] = useState<number>(-1);
@@ -96,13 +97,22 @@ export const Quiz = ({ questions, onComplete }: QuizProps) => {
         </RadioGroup>
 
         <div className="flex justify-between pt-4">
-          <Button
-            variant="outline"
-            onClick={handlePrevious}
-            disabled={currentQuestion === 0}
-          >
-            Previous
-          </Button>
+          {onBack && currentQuestion === 0 ? (
+            <Button
+              variant="outline"
+              onClick={onBack}
+            >
+              Voltar ao Áudio
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={handlePrevious}
+              disabled={currentQuestion === 0}
+            >
+              Previous
+            </Button>
+          )}
           
           <Button
             onClick={handleNext}

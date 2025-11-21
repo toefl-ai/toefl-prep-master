@@ -11,9 +11,10 @@ interface TaskPlayerProps {
   audioUrl: string;
   taskType: 'lecture' | 'conversation';
   onComplete: () => void;
+  onBack?: () => void;
 }
 
-export const TaskPlayer = ({ title, transcript, taskType, onComplete }: TaskPlayerProps) => {
+export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: TaskPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -208,6 +209,21 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete }: TaskPlay
               </p>
             </div>
           )}
+        </div>
+
+        {/* Navigation */}
+        <div className="flex justify-between pt-4">
+          {onBack && (
+            <Button variant="outline" onClick={onBack}>
+              Voltar
+            </Button>
+          )}
+          <Button 
+            onClick={onComplete}
+            className="ml-auto"
+          >
+            Continuar para Quiz
+          </Button>
         </div>
       </CardContent>
     </Card>
