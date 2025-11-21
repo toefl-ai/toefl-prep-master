@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Play, Pause, Volume2, ChevronDown, ChevronUp } from "lucide-react";
+import { Play, Pause, Volume2, ChevronDown, ChevronUp, Languages } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 interface TaskPlayerProps {
@@ -19,6 +20,8 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
   const [showTranscript, setShowTranscript] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<string>("");
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const intervalRef = useRef<number | null>(null);
 
@@ -27,6 +30,26 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
     const words = transcript.split(' ').length;
     const estimatedDuration = (words / 150) * 60;
     setDuration(estimatedDuration);
+
+    // Load available voices
+    const loadVoices = () => {
+      const voices = speechSynthesis.getVoices();
+      // Filter only English voices
+      const englishVoices = voices.filter(voice => voice.lang.startsWith('en'));
+      setAvailableVoices(englishVoices);
+      
+      // Set default voice (prefer US English)
+      if (englishVoices.length > 0 && !selectedVoice) {
+        const usVoice = englishVoices.find(v => v.lang === 'en-US');
+        setSelectedVoice(usVoice?.name || englishVoices[0].name);
+      }
+    };
+
+    // Voices might not be loaded immediately
+    loadVoices();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = loadVoices;
+    }
 
     return () => {
       if (intervalRef.current) {
@@ -54,11 +77,12 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
-    // Get available voices
-    const voices = speechSynthesis.getVoices();
-    const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
-    if (englishVoice) {
-      utterance.voice = englishVoice;
+    // Set selected voice
+    if (selectedVoice) {
+      const voice = availableVoices.find(v => v.name === selectedVoice);
+      if (voice) {
+        utterance.voice = voice;
+      }
     }
 
     utterance.onend = () => {
@@ -150,6 +174,28 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
       </CardHeader>
       
       <CardContent className="space-y-6">
+        {/* Voice Selector */}
+        {availableVoices.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Languages className="h-4 w-4 text-muted-foreground" />
+              <span>Select Voice / Accent:</span>
+            </div>
+            <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choose a voice" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableVoices.map((voice) => (
+                  <SelectItem key={voice.name} value={voice.name}>
+                    {voice.name} ({voice.lang})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {/* Audio Player */}
         <div className="space-y-4">
           <div className="flex items-center gap-4">
