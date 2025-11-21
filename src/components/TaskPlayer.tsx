@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Play, Pause, Volume2, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface TaskPlayerProps {
   title: string;
@@ -12,44 +13,118 @@ interface TaskPlayerProps {
   onComplete: () => void;
 }
 
-export const TaskPlayer = ({ title, transcript, audioUrl, taskType, onComplete }: TaskPlayerProps) => {
+export const TaskPlayer = ({ title, transcript, taskType, onComplete }: TaskPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    // Estimate duration based on text length (avg speaking rate: 150 words per minute)
+    const words = transcript.split(' ').length;
+    const estimatedDuration = (words / 150) * 60;
+    setDuration(estimatedDuration);
 
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration);
-    const handleEnded = () => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      if (utteranceRef.current) {
+        speechSynthesis.cancel();
+      }
+    };
+  }, [transcript]);
+
+  const startSpeech = () => {
+    if (!('speechSynthesis' in window)) {
+      toast.error('Text-to-speech não é suportado neste navegador');
+      return;
+    }
+
+    // Cancel any ongoing speech
+    speechSynthesis.cancel();
+
+    // Create new utterance
+    const utterance = new SpeechSynthesisUtterance(transcript);
+    utterance.lang = 'en-US';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    // Get available voices
+    const voices = speechSynthesis.getVoices();
+    const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
+    if (englishVoice) {
+      utterance.voice = englishVoice;
+    }
+
+    utterance.onend = () => {
       setIsPlaying(false);
+      setCurrentTime(duration);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
       onComplete();
     };
 
-    audio.addEventListener('timeupdate', updateTime);
-    audio.addEventListener('loadedmetadata', updateDuration);
-    audio.addEventListener('ended', handleEnded);
-
-    return () => {
-      audio.removeEventListener('timeupdate', updateTime);
-      audio.removeEventListener('loadedmetadata', updateDuration);
-      audio.removeEventListener('ended', handleEnded);
+    utterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event);
+      setIsPlaying(false);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      toast.error('Erro ao reproduzir áudio');
     };
-  }, [onComplete]);
+
+    utteranceRef.current = utterance;
+    speechSynthesis.speak(utterance);
+
+    // Simulate progress
+    const increment = duration / 100;
+    intervalRef.current = window.setInterval(() => {
+      setCurrentTime(prev => {
+        if (prev >= duration) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+          }
+          return duration;
+        }
+        return prev + increment;
+      });
+    }, (duration * 1000) / 100);
+  };
 
   const togglePlay = () => {
-    if (!audioRef.current) return;
-    
     if (isPlaying) {
-      audioRef.current.pause();
+      speechSynthesis.pause();
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      setIsPlaying(false);
     } else {
-      audioRef.current.play();
+      if (currentTime === 0 || currentTime >= duration) {
+        setCurrentTime(0);
+        startSpeech();
+      } else {
+        speechSynthesis.resume();
+        // Resume interval
+        const increment = duration / 100;
+        intervalRef.current = window.setInterval(() => {
+          setCurrentTime(prev => {
+            if (prev >= duration) {
+              if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+              }
+              return duration;
+            }
+            return prev + increment;
+          });
+        }, (duration * 1000) / 100);
+      }
+      setIsPlaying(true);
     }
-    setIsPlaying(!isPlaying);
   };
 
   const formatTime = (time: number) => {
@@ -76,8 +151,6 @@ export const TaskPlayer = ({ title, transcript, audioUrl, taskType, onComplete }
       <CardContent className="space-y-6">
         {/* Audio Player */}
         <div className="space-y-4">
-          <audio ref={audioRef} src={audioUrl} preload="metadata" />
-          
           <div className="flex items-center gap-4">
             <Button
               onClick={togglePlay}

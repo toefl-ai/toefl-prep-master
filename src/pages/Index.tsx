@@ -142,7 +142,7 @@ const Index = () => {
 
         {/* Footer */}
         <footer className="mt-16 text-center text-sm text-muted-foreground">
-          <p>Powered by Lovable AI & ElevenLabs</p>
+          <p>Powered by Lovable AI & Web Speech API</p>
         </footer>
       </div>
     </div>
