@@ -29,19 +29,7 @@ export const TaskGenerator = ({ onTaskGenerated }: TaskGeneratorProps) => {
       
       console.log('Content generated:', contentData);
 
-      // Step 2: Generate audio using ElevenLabs
-      toast.info('Converting to speech...');
-      
-      const { data: audioData, error: audioError } = await supabase.functions.invoke('generate-audio', {
-        body: { 
-          text: contentData.transcript,
-          taskType
-        }
-      });
-
-      if (audioError) throw audioError;
-
-      // Step 3: Save to database
+      // Step 2: Save to database
       toast.info('Saving task...');
       
       const { data: task, error: dbError } = await supabase
@@ -50,7 +38,7 @@ export const TaskGenerator = ({ onTaskGenerated }: TaskGeneratorProps) => {
           task_type: taskType,
           title: contentData.title,
           transcript: contentData.transcript,
-          audio_url: `data:audio/mpeg;base64,${audioData.audioData}`,
+          audio_url: null,
           questions: contentData.questions
         })
         .select()
