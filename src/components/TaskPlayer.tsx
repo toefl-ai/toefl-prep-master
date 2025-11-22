@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Play, Pause, Volume2, ChevronDown, ChevronUp, Languages } from "lucide-react";
+import { Play, Pause, Volume2, ChevronDown, ChevronUp, Languages, SkipForward, SkipBack } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -225,6 +225,46 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  const skipTime = (seconds: number) => {
+    const newTime = Math.max(0, Math.min(currentTime + seconds, duration));
+    setCurrentTime(newTime);
+    
+    if (isPlaying) {
+      // Cancel current speech and restart from approximate position
+      speechSynthesis.cancel();
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      
+      // For conversations, calculate which line should be playing
+      if (taskType === 'conversation') {
+        const cleanedTranscript = transcript.replace(/<br\s*\/?>/gi, '\n');
+        const lines = cleanedTranscript.split('\n').filter(line => line.trim());
+        const timePerLine = duration / lines.length;
+        currentUtteranceIndex.current = Math.floor(newTime / timePerLine);
+        speakConversationLines(lines);
+      } else {
+        // For lectures, just restart from beginning (limitation of Web Speech API)
+        currentUtteranceIndex.current = 0;
+        startSpeech();
+      }
+      
+      // Restart progress interval
+      const increment = duration / 100;
+      intervalRef.current = window.setInterval(() => {
+        setCurrentTime(prev => {
+          if (prev >= duration) {
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+            }
+            return duration;
+          }
+          return prev + increment;
+        });
+      }, (duration * 1000) / 100);
+    }
+  };
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
@@ -288,11 +328,11 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
 
         {/* Audio Player */}
         <div className="space-y-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Button
               onClick={togglePlay}
               size="lg"
-              className="h-14 w-14 rounded-full"
+              className="h-14 w-14 rounded-full flex-shrink-0"
             >
               {isPlaying ? (
                 <Pause className="h-6 w-6" />
@@ -300,6 +340,27 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
                 <Play className="h-6 w-6 ml-1" />
               )}
             </Button>
+            
+            <div className="flex gap-2 flex-shrink-0">
+              <Button
+                onClick={() => skipTime(-5)}
+                size="sm"
+                variant="outline"
+                className="h-10 w-10 p-0"
+                title="Voltar 5 segundos"
+              >
+                <SkipBack className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => skipTime(5)}
+                size="sm"
+                variant="outline"
+                className="h-10 w-10 p-0"
+                title="Adiantar 5 segundos"
+              >
+                <SkipForward className="h-4 w-4" />
+              </Button>
+            </div>
             
             <div className="flex-1 space-y-2">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
