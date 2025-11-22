@@ -22,8 +22,10 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
   const [duration, setDuration] = useState(0);
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<string>("");
+  const [selectedVoice2, setSelectedVoice2] = useState<string>("");
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const intervalRef = useRef<number | null>(null);
+  const currentUtteranceIndex = useRef<number>(0);
 
   useEffect(() => {
     // Estimate duration based on text length (avg speaking rate: 150 words per minute)
@@ -38,10 +40,17 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
       const englishVoices = voices.filter(voice => voice.lang.startsWith('en'));
       setAvailableVoices(englishVoices);
       
-      // Set default voice (prefer US English)
-      if (englishVoices.length > 0 && !selectedVoice) {
-        const usVoice = englishVoices.find(v => v.lang === 'en-US');
-        setSelectedVoice(usVoice?.name || englishVoices[0].name);
+      // Set default voices (prefer different voices for conversations)
+      if (englishVoices.length > 0) {
+        if (!selectedVoice) {
+          const usVoice = englishVoices.find(v => v.lang === 'en-US');
+          setSelectedVoice(usVoice?.name || englishVoices[0].name);
+        }
+        if (!selectedVoice2 && taskType === 'conversation' && englishVoices.length > 1) {
+          // Pick a different voice for the second speaker
+          const secondVoice = englishVoices.find(v => v.name !== selectedVoice) || englishVoices[1];
+          setSelectedVoice2(secondVoice?.name || englishVoices[Math.min(1, englishVoices.length - 1)].name);
+        }
       }
     };
 
@@ -69,23 +78,45 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
 
     // Cancel any ongoing speech
     speechSynthesis.cancel();
+    currentUtteranceIndex.current = 0;
 
     // Clean transcript: remove any <br> or <br/> tags that might exist
     const cleanedTranscript = transcript.replace(/<br\s*\/?>/gi, '\n');
 
-    // Create new utterance
-    const utterance = new SpeechSynthesisUtterance(cleanedTranscript);
+    // For conversations, split by speaker and alternate voices
+    if (taskType === 'conversation') {
+      const lines = cleanedTranscript.split('\n').filter(line => line.trim());
+      speakConversationLines(lines);
+    } else {
+      // For lectures, use single voice
+      speakSingleUtterance(cleanedTranscript);
+    }
+
+    // Simulate progress
+    const increment = duration / 100;
+    intervalRef.current = window.setInterval(() => {
+      setCurrentTime(prev => {
+        if (prev >= duration) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+          }
+          return duration;
+        }
+        return prev + increment;
+      });
+    }, (duration * 1000) / 100);
+  };
+
+  const speakSingleUtterance = (text: string) => {
+    const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
-    // Set selected voice
     if (selectedVoice) {
       const voice = availableVoices.find(v => v.name === selectedVoice);
-      if (voice) {
-        utterance.voice = voice;
-      }
+      if (voice) utterance.voice = voice;
     }
 
     utterance.onend = () => {
@@ -108,20 +139,53 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
 
     utteranceRef.current = utterance;
     speechSynthesis.speak(utterance);
+  };
 
-    // Simulate progress
-    const increment = duration / 100;
-    intervalRef.current = window.setInterval(() => {
-      setCurrentTime(prev => {
-        if (prev >= duration) {
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-          }
-          return duration;
-        }
-        return prev + increment;
-      });
-    }, (duration * 1000) / 100);
+  const speakConversationLines = (lines: string[]) => {
+    if (currentUtteranceIndex.current >= lines.length) {
+      setIsPlaying(false);
+      setCurrentTime(duration);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      onComplete();
+      return;
+    }
+
+    const line = lines[currentUtteranceIndex.current];
+    const utterance = new SpeechSynthesisUtterance(line);
+    utterance.lang = 'en-US';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    // Detect speaker and assign voice
+    // Typically first speaker (Student) uses voice 1, second speaker (Professor/Advisor) uses voice 2
+    const isFirstSpeaker = line.toLowerCase().startsWith('student') || 
+                          (currentUtteranceIndex.current % 2 === 0);
+    
+    const voiceName = isFirstSpeaker ? selectedVoice : selectedVoice2;
+    if (voiceName) {
+      const voice = availableVoices.find(v => v.name === voiceName);
+      if (voice) utterance.voice = voice;
+    }
+
+    utterance.onend = () => {
+      currentUtteranceIndex.current++;
+      speakConversationLines(lines);
+    };
+
+    utterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event);
+      setIsPlaying(false);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      toast.error('Erro ao reproduzir áudio');
+    };
+
+    utteranceRef.current = utterance;
+    speechSynthesis.speak(utterance);
   };
 
   const togglePlay = () => {
@@ -179,23 +243,46 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
       <CardContent className="space-y-6">
         {/* Voice Selector */}
         {availableVoices.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Languages className="h-4 w-4 text-muted-foreground" />
-              <span>Select Voice / Accent:</span>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Languages className="h-4 w-4 text-muted-foreground" />
+                <span>{taskType === 'conversation' ? 'Voice 1 (Student):' : 'Select Voice / Accent:'}</span>
+              </div>
+              <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choose a voice" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableVoices.map((voice) => (
+                    <SelectItem key={voice.name} value={voice.name}>
+                      {voice.name} ({voice.lang})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Choose a voice" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableVoices.map((voice) => (
-                  <SelectItem key={voice.name} value={voice.name}>
-                    {voice.name} ({voice.lang})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+            {taskType === 'conversation' && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Languages className="h-4 w-4 text-muted-foreground" />
+                  <span>Voice 2 (Professor/Advisor):</span>
+                </div>
+                <Select value={selectedVoice2} onValueChange={setSelectedVoice2}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose a voice" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableVoices.map((voice) => (
+                      <SelectItem key={voice.name} value={voice.name}>
+                        {voice.name} ({voice.lang})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         )}
 
