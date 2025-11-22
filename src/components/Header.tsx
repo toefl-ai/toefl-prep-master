@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Headphones, Home } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface HeaderProps {
   onHomeClick: () => void;
@@ -19,17 +20,20 @@ export const Header = ({ onHomeClick, showHomeButton = false }: HeaderProps) => 
           </h1>
         </div>
         
-        {showHomeButton && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onHomeClick}
-            className="gap-2"
-          >
-            <Home className="h-4 w-4" />
-            Home
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          {showHomeButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onHomeClick}
+              className="gap-2"
+            >
+              <Home className="h-4 w-4" />
+              Home
+            </Button>
+          )}
+        </div>
       </div>
     </header>
   );
