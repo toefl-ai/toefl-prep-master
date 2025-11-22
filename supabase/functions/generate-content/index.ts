@@ -60,10 +60,12 @@ REQUIREMENTS:
 - Topics: Academic issues, assignments, campus life
 - Natural dialogue with realistic problems/solutions
 
+CRITICAL: Use newline characters (\\n) for line breaks in the transcript. DO NOT use HTML tags like <br> or <br/>.
+
 Generate ONLY valid JSON with this exact structure:
 {
   "title": "Conversation title",
-  "transcript": "Full conversation with Speaker labels (e.g., 'Student: ...\\nProfessor: ...')",
+  "transcript": "Full conversation with Speaker labels. Each speaker line should be separated by \\n. Example: 'Student: Hello professor\\nProfessor: Hi, how can I help you?\\n'",
   "questions": [
     {
       "text": "Question text",

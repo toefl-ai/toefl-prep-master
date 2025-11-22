@@ -70,8 +70,11 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
     // Cancel any ongoing speech
     speechSynthesis.cancel();
 
+    // Clean transcript: remove any <br> or <br/> tags that might exist
+    const cleanedTranscript = transcript.replace(/<br\s*\/?>/gi, '\n');
+
     // Create new utterance
-    const utterance = new SpeechSynthesisUtterance(transcript);
+    const utterance = new SpeechSynthesisUtterance(cleanedTranscript);
     utterance.lang = 'en-US';
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
@@ -251,7 +254,7 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
           {showTranscript && (
             <div className="p-6 bg-muted/50 rounded-lg max-h-96 overflow-y-auto">
               <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                {transcript}
+                {transcript.replace(/<br\s*\/?>/gi, '\n')}
               </p>
             </div>
           )}
