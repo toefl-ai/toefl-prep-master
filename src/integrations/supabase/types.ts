@@ -93,7 +93,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      task_type: "lecture" | "conversation"
+      task_type: "lecture" | "conversation" | "reading"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -221,7 +221,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      task_type: ["lecture", "conversation"],
+      task_type: ["lecture", "conversation", "reading"],
     },
   },
 } as const
