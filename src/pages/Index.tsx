@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { TaskGenerator } from "@/components/TaskGenerator";
 import { TaskPlayer } from "@/components/TaskPlayer";
 import { Quiz } from "@/components/Quiz";
 import { Results } from "@/components/Results";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
+import { Session, User } from "@supabase/supabase-js";
 import { GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,10 +22,39 @@ interface Task {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [screen, setScreen] = useState<Screen>('home');
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const [score, setScore] = useState(0);
+
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (!session) {
+          navigate("/auth");
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleTaskGenerated = async (taskId: string) => {
     try {
@@ -52,16 +83,19 @@ const Index = () => {
     setScore(finalScore);
 
     // Save results to database
-    try {
-      const questions = currentTask?.questions as any[] || [];
-      await supabase.from('user_results').insert({
-        task_id: currentTask?.id,
-        user_answers: answers,
-        score: finalScore,
-        total_questions: questions.length,
-      });
-    } catch (error) {
-      console.error('Error saving results:', error);
+    if (user) {
+      try {
+        const questions = currentTask?.questions as any[] || [];
+        await supabase.from('user_results').insert({
+          task_id: currentTask?.id,
+          user_id: user.id,
+          user_answers: answers,
+          score: finalScore,
+          total_questions: questions.length,
+        });
+      } catch (error) {
+        console.error('Error saving results:', error);
+      }
     }
 
     setScreen('results');
@@ -80,6 +114,10 @@ const Index = () => {
     setScore(0);
     setScreen('home');
   };
+
+  if (!session || !user) {
+    return null; // Will redirect to auth page
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">

@@ -55,6 +55,7 @@ export type Database = {
           task_id: string
           total_questions: number
           user_answers: Json
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -63,6 +64,7 @@ export type Database = {
           task_id: string
           total_questions: number
           user_answers: Json
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -71,6 +73,7 @@ export type Database = {
           task_id?: string
           total_questions?: number
           user_answers?: Json
+          user_id?: string | null
         }
         Relationships: [
           {

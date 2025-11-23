@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Headphones, Home } from "lucide-react";
+import { Headphones, Home, LogOut } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface HeaderProps {
   onHomeClick: () => void;
@@ -8,6 +11,18 @@ interface HeaderProps {
 }
 
 export const Header = ({ onHomeClick, showHomeButton = false }: HeaderProps) => {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Erro ao sair");
+    } else {
+      toast.success("Logout realizado!");
+      navigate("/auth");
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -33,6 +48,15 @@ export const Header = ({ onHomeClick, showHomeButton = false }: HeaderProps) => 
               Home
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleLogout}
+            className="gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Sair
+          </Button>
         </div>
       </div>
     </header>
