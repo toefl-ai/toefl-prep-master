@@ -178,6 +178,8 @@ const Index = () => {
               questions={currentTask.questions as any[]}
               onComplete={handleQuizComplete}
               onBack={() => setScreen('player')}
+              transcript={currentTask.transcript}
+              taskType={currentTask.task_type}
             />
           )}
 

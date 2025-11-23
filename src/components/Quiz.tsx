@@ -17,9 +17,11 @@ interface QuizProps {
   questions: Question[];
   onComplete: (answers: number[], score: number) => void;
   onBack?: () => void;
+  transcript?: string;
+  taskType?: 'lecture' | 'conversation' | 'reading';
 }
 
-export const Quiz = ({ questions, onComplete, onBack }: QuizProps) => {
+export const Quiz = ({ questions, onComplete, onBack, transcript, taskType }: QuizProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<number[]>(new Array(questions.length).fill(-1));
   const [selectedAnswer, setSelectedAnswer] = useState<number>(-1);
@@ -50,9 +52,38 @@ export const Quiz = ({ questions, onComplete, onBack }: QuizProps) => {
 
   const question = questions[currentQuestion];
   const progress = ((currentQuestion + 1) / questions.length) * 100;
+  const isReading = taskType === 'reading';
+
+  // For reading, split transcript into paragraphs
+  const paragraphs = isReading && transcript 
+    ? transcript.split('\n').filter(p => p.trim()) 
+    : [];
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
+    <div className={`w-full ${isReading ? 'max-w-7xl' : 'max-w-4xl'} mx-auto`}>
+      <div className={`${isReading ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : ''}`}>
+        {/* Reading Passage - Left Column */}
+        {isReading && transcript && (
+          <Card className="h-fit sticky top-4">
+            <CardHeader className="border-b">
+              <CardTitle className="text-lg">Reading Passage</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="h-[600px] overflow-y-auto pr-4">
+                <div className="prose prose-slate dark:prose-invert max-w-none">
+                  {paragraphs.map((paragraph, index) => (
+                    <p key={index} className="mb-4 text-sm leading-relaxed">
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Questions - Right Column (or Full Width) */}
+        <Card className="w-full">
       <CardHeader>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -123,5 +154,7 @@ export const Quiz = ({ questions, onComplete, onBack }: QuizProps) => {
         </div>
       </CardContent>
     </Card>
+      </div>
+    </div>
   );
 };
