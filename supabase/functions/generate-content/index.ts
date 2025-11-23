@@ -21,8 +21,10 @@ serve(async (req) => {
     }
 
     // Generate system prompt based on task type
-    const systemPrompt = taskType === 'lecture' 
-      ? `You are an expert TOEFL test creator. Generate a high-quality academic lecture following this exact structure:
+    let systemPrompt = '';
+    
+    if (taskType === 'lecture') {
+      systemPrompt = `You are an expert TOEFL test creator. Generate a high-quality academic lecture following this exact structure:
 
 REQUIREMENTS:
 - Length: 650-750 words
@@ -50,8 +52,9 @@ Create 6 questions covering:
 - 2 gist/main idea questions
 - 2 detail questions
 - 1 inference question
-- 1 organization/purpose question`
-      : `You are an expert TOEFL test creator. Generate a realistic campus conversation following this exact structure:
+- 1 organization/purpose question`;
+    } else if (taskType === 'conversation') {
+      systemPrompt = `You are an expert TOEFL test creator. Generate a realistic campus conversation following this exact structure:
 
 REQUIREMENTS:
 - Length: 12-25 dialogue turns
@@ -82,6 +85,40 @@ Create 5 questions covering:
 - 2 detail questions
 - 1 inference question
 - 1 purpose/attitude question`;
+    } else if (taskType === 'reading') {
+      systemPrompt = `You are an expert TOEFL test creator. Generate a high-quality academic reading passage following this exact structure:
+
+REQUIREMENTS:
+- Length: 600-700 words
+- Style: Academic prose similar to university textbooks
+- Topics: Natural sciences, social sciences, arts, humanities
+- Include: Clear thesis, supporting paragraphs with evidence, conclusion
+- Use formal academic vocabulary
+- Include transition phrases and cohesive structure
+
+Generate ONLY valid JSON with this exact structure:
+{
+  "title": "Reading passage title",
+  "transcript": "Full reading passage (600-700 words). Write as continuous academic prose without speaker labels.",
+  "questions": [
+    {
+      "text": "Question text",
+      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
+      "correctAnswer": 0,
+      "explanation": "Why this answer is correct",
+      "type": "vocabulary|factual|inference|rhetorical|sentence|summary"
+    }
+  ]
+}
+
+Create 10 questions covering:
+- 2 vocabulary questions (word meaning in context)
+- 3 factual information questions (explicit details)
+- 2 inference questions (implicit meaning)
+- 1 rhetorical purpose question (why author mentions X)
+- 1 sentence simplification question
+- 1 summary/main idea question`;
+    }
 
     // Call Lovable AI (Gemini)
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -94,7 +131,7 @@ Create 5 questions covering:
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Generate a ${taskType === 'lecture' ? 'lecture' : 'conversation'} for TOEFL Listening practice.` }
+          { role: 'user', content: `Generate a ${taskType === 'reading' ? 'reading passage' : taskType === 'lecture' ? 'lecture' : 'conversation'} for TOEFL practice.` }
         ],
         response_format: { type: 'json_object' }
       }),

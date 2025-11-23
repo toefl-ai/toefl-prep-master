@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TaskGenerator } from "@/components/TaskGenerator";
 import { TaskPlayer } from "@/components/TaskPlayer";
+import { ReadingPlayer } from "@/components/ReadingPlayer";
 import { Quiz } from "@/components/Quiz";
 import { Results } from "@/components/Results";
 import { Header } from "@/components/Header";
@@ -17,7 +18,7 @@ interface Task {
   title: string;
   transcript: string;
   audio_url: string;
-  task_type: 'lecture' | 'conversation';
+  task_type: 'lecture' | 'conversation' | 'reading';
   questions: unknown;
 }
 
@@ -145,7 +146,7 @@ const Index = () => {
                   <span className="text-sm font-medium">Generate Your Practice Task</span>
                 </div>
                 <p className="text-muted-foreground">
-                  Choose between an academic lecture or campus conversation
+                  Escolha entre lecture, conversation ou reading passage
                 </p>
               </div>
               <TaskGenerator onTaskGenerated={handleTaskGenerated} />
@@ -153,14 +154,25 @@ const Index = () => {
           )}
 
           {screen === 'player' && currentTask && (
-            <TaskPlayer
-              title={currentTask.title}
-              transcript={currentTask.transcript}
-              audioUrl={currentTask.audio_url}
-              taskType={currentTask.task_type}
-              onComplete={handleAudioComplete}
-              onBack={handleHome}
-            />
+            <>
+              {currentTask.task_type === 'reading' ? (
+                <ReadingPlayer
+                  title={currentTask.title}
+                  transcript={currentTask.transcript}
+                  onComplete={handleAudioComplete}
+                  onBack={handleHome}
+                />
+              ) : (
+                <TaskPlayer
+                  title={currentTask.title}
+                  transcript={currentTask.transcript}
+                  audioUrl={currentTask.audio_url}
+                  taskType={currentTask.task_type}
+                  onComplete={handleAudioComplete}
+                  onBack={handleHome}
+                />
+              )}
+            </>
           )}
 
           {screen === 'quiz' && currentTask && (

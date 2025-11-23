@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Book, MessageCircle } from "lucide-react";
+import { Loader2, Book, MessageCircle, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -11,9 +11,9 @@ interface TaskGeneratorProps {
 
 export const TaskGenerator = ({ onTaskGenerated }: TaskGeneratorProps) => {
   const [generating, setGenerating] = useState(false);
-  const [selectedType, setSelectedType] = useState<'lecture' | 'conversation' | null>(null);
+  const [selectedType, setSelectedType] = useState<'lecture' | 'conversation' | 'reading' | null>(null);
 
-  const generateTask = async (taskType: 'lecture' | 'conversation') => {
+  const generateTask = async (taskType: 'lecture' | 'conversation' | 'reading') => {
     setGenerating(true);
     setSelectedType(taskType);
     
@@ -59,7 +59,7 @@ export const TaskGenerator = ({ onTaskGenerated }: TaskGeneratorProps) => {
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
+    <div className="grid gap-6 md:grid-cols-3 max-w-6xl mx-auto">
       <Card className="hover:shadow-large transition-all duration-300 border-2 hover:border-primary">
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -118,6 +118,38 @@ export const TaskGenerator = ({ onTaskGenerated }: TaskGeneratorProps) => {
               </>
             ) : (
               'Generate Conversation'
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="hover:shadow-large transition-all duration-300 border-2 hover:border-secondary">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-lg bg-secondary/10">
+              <BookOpen className="h-6 w-6 text-secondary" />
+            </div>
+            <div>
+              <CardTitle>Reading Passage</CardTitle>
+              <CardDescription>Academic text with 10 questions</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Button 
+            onClick={() => generateTask('reading')}
+            disabled={generating}
+            variant="outline"
+            className="w-full"
+            size="lg"
+          >
+            {generating && selectedType === 'reading' ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              'Generate Reading'
             )}
           </Button>
         </CardContent>
