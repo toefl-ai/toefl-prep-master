@@ -154,25 +154,23 @@ const Index = () => {
           )}
 
           {screen === 'player' && currentTask && (
-            <>
-              {currentTask.task_type === 'reading' ? (
-                <ReadingPlayer
-                  title={currentTask.title}
-                  transcript={currentTask.transcript}
-                  onComplete={handleAudioComplete}
-                  onBack={handleHome}
-                />
-              ) : (
-                <TaskPlayer
-                  title={currentTask.title}
-                  transcript={currentTask.transcript}
-                  audioUrl={currentTask.audio_url}
-                  taskType={currentTask.task_type}
-                  onComplete={handleAudioComplete}
-                  onBack={handleHome}
-                />
-              )}
-            </>
+            currentTask.task_type === 'reading' ? (
+              <ReadingPlayer
+                title={currentTask.title}
+                transcript={currentTask.transcript}
+                onComplete={handleAudioComplete}
+                onBack={handleHome}
+              />
+            ) : (
+              <TaskPlayer
+                title={currentTask.title}
+                transcript={currentTask.transcript}
+                audioUrl={currentTask.audio_url}
+                taskType={currentTask.task_type as 'lecture' | 'conversation'}
+                onComplete={handleAudioComplete}
+                onBack={handleHome}
+              />
+            )
           )}
 
           {screen === 'quiz' && currentTask && (
