@@ -153,7 +153,9 @@ export const TaskPlayer = ({ title, transcript, taskType, onComplete, onBack }: 
     }
 
     const line = lines[currentUtteranceIndex.current];
-    const utterance = new SpeechSynthesisUtterance(line);
+    // Remove speaker name (e.g., "Student:", "Professor:", etc.) from the line
+    const textToSpeak = line.replace(/^[^:]+:\s*/, '').trim();
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = 'en-US';
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
