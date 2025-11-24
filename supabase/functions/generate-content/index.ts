@@ -86,38 +86,58 @@ Create 5 questions covering:
 - 1 inference question
 - 1 purpose/attitude question`;
     } else if (taskType === 'reading') {
-      systemPrompt = `You are an expert TOEFL test creator. Generate a high-quality academic reading passage following this exact structure:
+      systemPrompt = `You are an expert TOEFL test creator. Generate a high-quality academic reading passage following these EXACT RULES:
 
-REQUIREMENTS:
-- Length: 600-700 words
-- Style: Academic prose similar to university textbooks
-- Topics: Natural sciences, social sciences, arts, humanities
-- Include: Clear thesis, supporting paragraphs with evidence, conclusion
-- Use formal academic vocabulary
+PASSAGE REQUIREMENTS:
+- Length: 300-700 words
+- Structure: Clear introduction, body paragraphs with development, conclusion (can be implicit)
+- Academic level: University-level vocabulary and concepts
+- Topics MUST be from TOEFL academic subjects:
+  * Biology (evolution, ecosystems, genetics)
+  * Anthropology (cultural development, human origins)
+  * History (civilizations, historical events, social movements)
+  * Archaeology (excavations, ancient cultures, artifacts)
+  * Astronomy (celestial bodies, space exploration, cosmology)
+  * Social Sciences (sociology, psychology, human behavior)
+  * Geology (earth formation, geological processes, natural phenomena)
+  * Economics (trade, markets, economic systems)
+  * Education (learning theories, pedagogical methods)
+- Style: Academic prose similar to university textbooks with formal vocabulary
 - Include transition phrases and cohesive structure
+
+QUESTIONS - CREATE EXACTLY 10 QUESTIONS:
+Must include these TOEFL question types:
+1. Factual Information (2-3 questions): "According to the passage...", "The author mentions X because..."
+2. Negative Factual (1 question): "All of the following are mentioned EXCEPT...", "The passage discusses all of the following EXCEPT..."
+3. Inference (2 questions): "What can be inferred about...", "The passage suggests that..."
+4. Rhetorical Purpose (1 question): "Why does the author mention X?", "The author discusses X in order to..."
+5. Vocabulary (1-2 questions): "The word X in paragraph Y is closest in meaning to..."
+6. Reference (0-1 question): "The word 'it' in paragraph X refers to..."
+7. Sentence Simplification (1 question): "Which sentence best expresses the essential information in the highlighted sentence?"
+8. Insert Sentence (0-1 question): "Where would the following sentence best fit?"
+9. Summary/Fill-in Table (1 question): "An introductory sentence for a brief summary... Complete the summary by selecting THREE answer choices..."
 
 Generate ONLY valid JSON with this exact structure:
 {
-  "title": "Reading passage title",
-  "transcript": "Full reading passage (600-700 words). Write as continuous academic prose without speaker labels.",
+  "title": "Academic passage title (topic-focused)",
+  "transcript": "Full reading passage (300-700 words). Write as continuous academic prose with clear paragraph breaks using \\n\\n between paragraphs.",
   "questions": [
     {
-      "text": "Question text",
+      "text": "Question text (clear and specific)",
       "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
       "correctAnswer": 0,
-      "explanation": "Why this answer is correct",
-      "type": "vocabulary|factual|inference|rhetorical|sentence|summary"
+      "explanation": "Detailed explanation of why this answer is correct and why others are wrong",
+      "type": "factual|negative-factual|inference|rhetorical-purpose|vocabulary|reference|sentence-simplification|insert-sentence|summary"
     }
   ]
 }
 
-Create 10 questions covering:
-- 2 vocabulary questions (word meaning in context)
-- 3 factual information questions (explicit details)
-- 2 inference questions (implicit meaning)
-- 1 rhetorical purpose question (why author mentions X)
-- 1 sentence simplification question
-- 1 summary/main idea question`;
+CRITICAL: 
+- Each question must have EXACTLY 4 options (A, B, C, D)
+- Only ONE correct answer per question
+- Explanations should reference specific parts of the passage
+- Questions should test different cognitive skills
+- Difficulty should vary from medium to challenging (university level)`;
     }
 
     // Call Lovable AI (Gemini)
