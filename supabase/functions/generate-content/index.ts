@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { taskType } = await req.json();
+    const { taskType, writingType } = await req.json();
     
     console.log('Generating content for task type:', taskType);
     
@@ -138,6 +138,92 @@ CRITICAL:
 - Explanations should reference specific parts of the passage
 - Questions should test different cognitive skills
 - Difficulty should vary from medium to challenging (university level)`;
+    } else if (taskType === 'writing') {
+      if (writingType === 'integrated') {
+        systemPrompt = `You are an expert TOEFL test creator. Generate a Task 1 Integrated Writing task following these EXACT RULES:
+
+TASK 1 — INTEGRATED WRITING (20 minutes)
+
+READING PASSAGE REQUIREMENTS:
+- Length: 250-350 words
+- Style: Academic, objective prose
+- Topics: Science, history, social sciences, education, technology
+- Structure: Present 3 main points/arguments about a topic
+- Tone: Formal, evidence-based
+
+LECTURE REQUIREMENTS:
+- The lecture CHALLENGES, REFUTES, or ADDS COMPLEXITY to the reading
+- Must address the same 3 points from the reading
+- Provide counter-arguments, additional evidence, or alternative explanations
+- Length: Equivalent to 2-3 minutes of spoken content (~200-300 words when transcribed)
+
+QUESTION:
+Always use: "Summarize the points made in the lecture and explain how they respond to points made in the reading."
+
+SAMPLE RESPONSE:
+- Length: 150-225 words
+- Shows clear relationship between lecture and reading
+- NO personal opinion
+- Organized structure comparing the points
+
+Generate ONLY valid JSON with this exact structure:
+{
+  "title": "Topic of the Integrated Writing Task",
+  "readingPassage": "Full reading passage (250-350 words) with 3 clear main points",
+  "lectureSummary": "Full lecture content (200-300 words) that challenges/refutes the 3 points from reading",
+  "question": "Summarize the points made in the lecture and explain how they respond to points made in the reading.",
+  "sampleResponse": "Model answer (150-225 words) showing how lecture responds to reading"
+}
+
+CRITICAL:
+- The lecture must CONTRADICT or CHALLENGE the reading, not support it
+- Each of the 3 points in reading must have a corresponding counter-point in lecture
+- Use transition phrases like "First", "Second", "Finally" to structure arguments
+- Academic vocabulary and formal tone throughout`;
+      } else if (writingType === 'independent') {
+        systemPrompt = `You are an expert TOEFL test creator. Generate a Task 2 Independent Writing task following these EXACT RULES:
+
+TASK 2 — INDEPENDENT WRITING (30 minutes)
+
+PROMPT REQUIREMENTS:
+Must be one of these official TOEFL types:
+1. "Do you agree or disagree with the following statement? [Statement]"
+2. "Some people believe [X]. Others believe [Y]. Which view do you agree with?"
+3. "What are the most important qualities of [person/thing]?"
+4. "Discuss the advantages and disadvantages of [topic]"
+
+TOPICS should be about:
+- Education and learning
+- Technology and society
+- Work and career
+- Environment and sustainability
+- Social behavior and relationships
+- Culture and traditions
+- Government and policy
+
+SAMPLE RESPONSE REQUIREMENTS:
+- Length: 300-350 words minimum
+- Structure: Introduction with thesis → Body paragraphs (2-3) with topic sentences, examples, explanations → Conclusion
+- Clear position/opinion stated in introduction
+- Each body paragraph develops ONE main idea with specific examples
+- Use transition words (Furthermore, In addition, However, For these reasons)
+- Academic vocabulary and varied sentence structures
+- Formal tone, no contractions
+
+Generate ONLY valid JSON with this exact structure:
+{
+  "title": "Independent Writing Task",
+  "prompt": "Full question following one of the official TOEFL formats above",
+  "sampleResponse": "Model essay (300-350 words) with clear thesis, well-developed body paragraphs, and conclusion"
+}
+
+CRITICAL:
+- Prompt must be realistic and similar to actual TOEFL questions
+- Sample response should demonstrate excellent organization, grammar, and development
+- Include specific examples and detailed explanations in body paragraphs
+- Show strong cohesion with transition words and phrases
+- Maintain formal academic tone throughout`;
+      }
     }
 
     // Call Lovable AI (Gemini)
@@ -151,7 +237,13 @@ CRITICAL:
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Generate a ${taskType === 'reading' ? 'reading passage' : taskType === 'lecture' ? 'lecture' : 'conversation'} for TOEFL practice.` }
+          { role: 'user', content: `Generate a ${
+            taskType === 'writing' 
+              ? (writingType === 'integrated' ? 'Task 1 Integrated Writing task' : 'Task 2 Independent Writing task')
+              : taskType === 'reading' ? 'reading passage' 
+              : taskType === 'lecture' ? 'lecture' 
+              : 'conversation'
+          } for TOEFL practice.` }
         ],
         response_format: { type: 'json_object' }
       }),
