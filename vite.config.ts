@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: "/toefl-prep-master/",
+  base: "/",
   server: {
     host: "::",
     port: 8080,
