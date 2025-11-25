@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Clock, ArrowLeft } from "lucide-react";
+import { Clock, ArrowLeft, Play, Pause, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 interface WritingTaskProps {
@@ -16,6 +16,8 @@ export const WritingTask = ({ task, onSubmit, onBack }: WritingTaskProps) => {
   const [userResponse, setUserResponse] = useState("");
   const [timeLeft, setTimeLeft] = useState(task.writingType === 'integrated' ? 1200 : 1800); // 20 or 30 minutes in seconds
   const [wordCount, setWordCount] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -36,6 +38,56 @@ export const WritingTask = ({ task, onSubmit, onBack }: WritingTaskProps) => {
     const words = userResponse.trim().split(/\s+/).filter(w => w.length > 0);
     setWordCount(words.length);
   }, [userResponse]);
+
+  useEffect(() => {
+    return () => {
+      if (utteranceRef.current) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const handlePlayAudio = () => {
+    if (!task.lectureSummary) return;
+
+    if (isPlaying) {
+      window.speechSynthesis.pause();
+      setIsPlaying(false);
+      return;
+    }
+
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+      setIsPlaying(true);
+      return;
+    }
+
+    // Create new utterance
+    const utterance = new SpeechSynthesisUtterance(task.lectureSummary);
+    utteranceRef.current = utterance;
+
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    utterance.onend = () => {
+      setIsPlaying(false);
+    };
+
+    utterance.onerror = () => {
+      setIsPlaying(false);
+      toast.error("Erro ao reproduzir áudio");
+    };
+
+    window.speechSynthesis.speak(utterance);
+    setIsPlaying(true);
+  };
+
+  const handleRestartAudio = () => {
+    window.speechSynthesis.cancel();
+    setIsPlaying(false);
+    setTimeout(() => handlePlayAudio(), 100);
+  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -97,7 +149,30 @@ export const WritingTask = ({ task, onSubmit, onBack }: WritingTaskProps) => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">🎧 Lecture Summary</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">🎧 Lecture Summary</CardTitle>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePlayAudio}
+                    >
+                      {isPlaying ? (
+                        <><Pause className="h-4 w-4 mr-1" /> Pausar</>
+                      ) : (
+                        <><Play className="h-4 w-4 mr-1" /> Ouvir</>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRestartAudio}
+                      disabled={!isPlaying && !window.speechSynthesis.speaking}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="prose prose-sm dark:prose-invert max-w-none h-[300px] overflow-y-auto">
